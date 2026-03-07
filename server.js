@@ -211,47 +211,65 @@ function generateChannelSchedule() {
   const now = Date.now();
   const nextSchedule = {};
 
-  getConfiguredChannels().forEach((channel, index) => {
-    const schedulable = getSchedulablePlaylist(channel.type);
-    const playlist = shuffle(schedulable.playlist);
-    const slotMinutes = Number(channel.slotMinutes || config.slotMinutes || DEFAULT_SLOT_MINUTES);
-    const scheduleHours = Number(channel.scheduleHours || config.scheduleHours || DEFAULT_SCHEDULE_HOURS);
-    const timeline = [];
-    const slotDurationMs = slotMinutes * 60 * 1000;
-    const horizonMs = Math.max(slotDurationMs, scheduleHours * 60 * 60 * 1000);
-
-    if (playlist.length > 0) {
-      let cursor = now;
-      let playlistIndex = 0;
-
-      while ((cursor - now) < horizonMs) {
-        const media = playlist[playlistIndex % playlist.length];
-        const entryDurationMs = Math.max(1, Number(slotDurationMs));
-        timeline.push({
-          scheduleIndex: timeline.length,
-          playlistIndex: playlistIndex % playlist.length,
-          mediaId: media.id,
-          startsAt: cursor,
-          endsAt: cursor + entryDurationMs,
-          durationMs: entryDurationMs
-        });
-        cursor += entryDurationMs;
-        playlistIndex += 1;
-      }
+  const configuredChannels = getConfiguredChannels();
+  const channelsByType = configuredChannels.reduce((accumulator, channel, index) => {
+    const type = channel.type || 'all';
+    if (!accumulator[type]) {
+      accumulator[type] = [];
     }
 
-    nextSchedule[channel.id] = {
-      id: channel.id,
-      name: channel.name || `Channel ${index + 1}`,
-      type: channel.type || 'all',
-      playlist,
-      timeline,
-      startTime: now,
-      durationMs: slotDurationMs,
-      slotMinutes,
-      scheduleHours,
-      browserPlayableOnly: schedulable.browserPlayableOnly
-    };
+    accumulator[type].push({ channel, index });
+    return accumulator;
+  }, {});
+
+  Object.values(channelsByType).forEach((channelEntries) => {
+    const primaryChannel = channelEntries[0]?.channel;
+    const schedulable = getSchedulablePlaylist(primaryChannel?.type);
+    const basePlaylist = shuffle(schedulable.playlist);
+
+    channelEntries.forEach(({ channel, index }, typeIndex) => {
+      const playlist = basePlaylist.length > 0
+        ? basePlaylist.map((_, playlistIndex) => basePlaylist[(playlistIndex + typeIndex) % basePlaylist.length])
+        : [];
+      const slotMinutes = Number(channel.slotMinutes || config.slotMinutes || DEFAULT_SLOT_MINUTES);
+      const scheduleHours = Number(channel.scheduleHours || config.scheduleHours || DEFAULT_SCHEDULE_HOURS);
+      const timeline = [];
+      const slotDurationMs = slotMinutes * 60 * 1000;
+      const horizonMs = Math.max(slotDurationMs, scheduleHours * 60 * 60 * 1000);
+
+      if (playlist.length > 0) {
+        let cursor = now;
+        let playlistIndex = 0;
+
+        while ((cursor - now) < horizonMs) {
+          const media = playlist[playlistIndex % playlist.length];
+          const entryDurationMs = Math.max(1, Number(slotDurationMs));
+          timeline.push({
+            scheduleIndex: timeline.length,
+            playlistIndex: playlistIndex % playlist.length,
+            mediaId: media.id,
+            startsAt: cursor,
+            endsAt: cursor + entryDurationMs,
+            durationMs: entryDurationMs
+          });
+          cursor += entryDurationMs;
+          playlistIndex += 1;
+        }
+      }
+
+      nextSchedule[channel.id] = {
+        id: channel.id,
+        name: channel.name || `Channel ${index + 1}`,
+        type: channel.type || 'all',
+        playlist,
+        timeline,
+        startTime: now,
+        durationMs: slotDurationMs,
+        slotMinutes,
+        scheduleHours,
+        browserPlayableOnly: schedulable.browserPlayableOnly
+      };
+    });
   });
 
   channelSchedule = nextSchedule;

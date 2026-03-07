@@ -27,6 +27,8 @@ class TVController {
         this.scheduleRefreshTimeout = null;
         this.nowPlayingTimeout = null;
         this.infoRefreshInterval = null;
+        this.pendingPlaybackKey = null;
+        this.activePlaybackKey = null;
 
         this.initializeEventListeners();
         this.initializeSocketListeners();
@@ -80,6 +82,7 @@ class TVController {
 
         document.getElementById('infoBtn').addEventListener('click', () => {
             this.markUserInteracted();
+            this.showChannelNumber();
             this.showNowPlayingDetails();
         });
 
@@ -137,6 +140,8 @@ class TVController {
         this.videoPlayer.addEventListener('playing', () => {
             this.clearPlaybackMessage();
             this.removeStatic();
+            this.activePlaybackKey = this.pendingPlaybackKey || this.activePlaybackKey;
+            this.pendingPlaybackKey = null;
             this.startInfoRefresh();
             this.updateChannelDisplay();
         });
@@ -152,6 +157,8 @@ class TVController {
 
         this.videoPlayer.addEventListener('ended', () => {
             this.stopInfoRefresh();
+            this.pendingPlaybackKey = null;
+            this.activePlaybackKey = null;
             this.updateChannelDisplay();
         });
 
@@ -285,7 +292,8 @@ class TVController {
         this.removeStatic();
 
         const activeChannel = this.channels[this.currentChannel];
-        if (activeChannel && !this.isPaused) {
+        const isInteractionGateVisible = this.currentMeta && this.currentMeta.textContent === 'Waiting for your first interaction';
+        if (activeChannel && !this.isPaused && isInteractionGateVisible) {
             this.playMedia(activeChannel);
         }
     }
@@ -431,6 +439,8 @@ class TVController {
         this.videoPlayer.removeAttribute('src');
         this.videoPlayer.load();
         this.videoPlayer.style.display = 'none';
+        this.pendingPlaybackKey = null;
+        this.activePlaybackKey = null;
         this.stopInfoRefresh();
         this.showStatic();
         this.powerOffEffect();
@@ -564,6 +574,8 @@ class TVController {
         if (!persistent && this.nowPlaying && this.nowPlaying.style.opacity === '1' && !this.isNowPlayingPinned) {
             this.setNowPlayingVisible(false);
             window.clearTimeout(this.nowPlayingTimeout);
+            this.channelBadge.style.display = 'none';
+            window.clearTimeout(this.channelNumberTimeout);
             return;
         }
 
@@ -656,6 +668,20 @@ class TVController {
             return;
         }
 
+        const playbackKey = `${media.id}:${media.startedAt || 'now'}`;
+        const targetSrc = `${window.location.origin}${media.streamUrl}?t=${media.startedAt || Date.now()}`;
+
+        if (this.pendingPlaybackKey === playbackKey) {
+            return;
+        }
+
+        if (this.activePlaybackKey === playbackKey && this.videoPlayer.currentSrc === targetSrc) {
+            if (this.videoPlayer.paused && !this.isPaused) {
+                this.videoPlayer.play().catch(() => {});
+            }
+            return;
+        }
+
         this.isPaused = false;
         this.isNowPlayingPinned = false;
         this.updatePlayButtonLabel();
@@ -677,9 +703,14 @@ class TVController {
         this.clearPlaybackMessage();
         this.removeStatic();
         this.videoPlayer.style.display = 'block';
-        this.videoPlayer.src = `${media.streamUrl}?t=${media.startedAt || Date.now()}`;
+        this.pendingPlaybackKey = playbackKey;
+        this.videoPlayer.src = targetSrc;
         this.videoPlayer.load();
         this.videoPlayer.play().catch((error) => {
+            if (error && (error.name === 'AbortError' || String(error.message || '').includes('aborted by the user agent'))) {
+                return;
+            }
+            this.pendingPlaybackKey = null;
             console.error('Failed to play media:', error);
             if (error && error.name === 'NotAllowedError') {
                 this.showInteractionRequired(media);
