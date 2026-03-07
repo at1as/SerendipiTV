@@ -1,0 +1,555 @@
+class TVController {
+    constructor() {
+        this.socket = io();
+        this.currentChannel = 0;
+        this.channels = [];
+        this.videoPlayer = document.getElementById('videoPlayer');
+        this.channelNumber = document.getElementById('channelNumber');
+        this.channelName = document.getElementById('channelName');
+        this.volume = 0.5;
+        this.isPowerOn = true;
+
+        this.initializeEventListeners();
+        this.initializeSocketListeners();
+        this.loadConfiguration();
+    }
+
+    initializeEventListeners() {
+        // Channel buttons
+        document.querySelectorAll('.channel-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const channelId = e.target.dataset.channel;
+                this.changeChannel(channelId);
+            });
+        });
+
+        // D-pad controls
+        document.getElementById('channelUp').addEventListener('click', () => {
+            this.channelUp();
+        });
+
+        document.getElementById('channelDown').addEventListener('click', () => {
+            this.channelDown();
+        });
+
+        document.getElementById('volumeUp').addEventListener('click', () => {
+            this.volumeUp();
+        });
+
+        document.getElementById('volumeDown').addEventListener('click', () => {
+            this.volumeDown();
+        });
+
+        document.getElementById('ok').addEventListener('click', () => {
+            this.togglePower();
+        });
+
+        // Knobs
+        document.getElementById('powerKnob').addEventListener('click', () => {
+            this.togglePower();
+        });
+
+        document.getElementById('volumeKnob').addEventListener('click', () => {
+            this.muteToggle();
+        });
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowUp':
+                    this.channelUp();
+                    break;
+                case 'ArrowDown':
+                    this.channelDown();
+                    break;
+                case 'ArrowLeft':
+                    this.volumeDown();
+                    break;
+                case 'ArrowRight':
+                    this.volumeUp();
+                    break;
+                case ' ':
+                    e.preventDefault();
+                    this.togglePower();
+                    break;
+                case 'm':
+                    this.muteToggle();
+                    break;
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                    this.changeChannel(parseInt(e.key) - 1);
+                    break;
+            }
+        });
+
+        // Video player events
+        this.videoPlayer.addEventListener('error', (e) => {
+            console.error('Video error:', e);
+            this.showStatic();
+        });
+
+        this.videoPlayer.addEventListener('ended', () => {
+            this.playNextMedia();
+        });
+
+        // Configuration panel
+        document.getElementById('settingsBtn').addEventListener('click', () => {
+            this.showConfigPanel();
+        });
+
+        document.getElementById('saveConfig').addEventListener('click', () => {
+            this.saveConfiguration();
+        });
+
+        document.getElementById('testConnection').addEventListener('click', () => {
+            this.testConnection();
+        });
+
+        document.getElementById('closeConfig').addEventListener('click', () => {
+            this.hideConfigPanel();
+        });
+    }
+
+    initializeSocketListeners() {
+        this.socket.on('channels', (channels) => {
+            this.channels = channels;
+            this.updateChannelDisplay();
+        });
+
+        this.socket.on('channelChanged', (media) => {
+            this.playMedia(media);
+        });
+
+        this.socket.on('connect', () => {
+            console.log('Connected to TV server');
+        });
+
+        this.socket.on('disconnect', () => {
+            console.log('Disconnected from TV server');
+            this.showStatic();
+        });
+    }
+
+    changeChannel(channelId) {
+        if (!this.isPowerOn) return;
+
+        this.currentChannel = parseInt(channelId);
+        this.socket.emit('changeChannel', this.currentChannel);
+        this.updateChannelDisplay();
+        this.addChannelChangeEffect();
+    }
+
+    channelUp() {
+        if (!this.isPowerOn) return;
+
+        this.currentChannel = (this.currentChannel + 1) % this.channels.length;
+        this.changeChannel(this.currentChannel);
+    }
+
+    channelDown() {
+        if (!this.isPowerOn) return;
+
+        this.currentChannel = (this.currentChannel - 1 + this.channels.length) % this.channels.length;
+        this.changeChannel(this.currentChannel);
+    }
+
+    volumeUp() {
+        if (!this.isPowerOn) return;
+
+        this.volume = Math.min(1, this.volume + 0.1);
+        this.updateVolume();
+    }
+
+    volumeDown() {
+        if (!this.isPowerOn) return;
+
+        this.volume = Math.max(0, this.volume - 0.1);
+        this.updateVolume();
+    }
+
+    muteToggle() {
+        if (!this.isPowerOn) return;
+
+        this.volume = this.volume > 0 ? 0 : 0.5;
+        this.updateVolume();
+    }
+
+    togglePower() {
+        this.isPowerOn = !this.isPowerOn;
+
+        if (this.isPowerOn) {
+            this.videoPlayer.style.display = 'block';
+            this.changeChannel(this.currentChannel);
+            this.powerOnEffect();
+        } else {
+            this.videoPlayer.pause();
+            this.videoPlayer.style.display = 'none';
+            this.showStatic();
+            this.powerOffEffect();
+        }
+    }
+
+    updateVolume() {
+        this.videoPlayer.volume = this.volume;
+        this.updateVolumeIndicator();
+    }
+
+    updateVolumeIndicator() {
+        const bars = document.querySelectorAll('.volume-bars .bar');
+        const activeBars = Math.floor(this.volume * 4);
+
+        bars.forEach((bar, index) => {
+            bar.style.opacity = index < activeBars ? `${0.3 + (index * 0.2)}` : '0.1';
+        });
+    }
+
+    updateChannelDisplay() {
+        if (this.channels.length === 0) return;
+
+        const channel = this.channels[this.currentChannel];
+        if (channel) {
+            this.channelNumber.textContent = this.currentChannel + 1;
+            this.channelName.textContent = channel.channelName || 'Channel ' + (this.currentChannel + 1);
+        }
+    }
+
+    playMedia(media) {
+        if (!media) {
+            this.showStatic();
+            return;
+        }
+
+        // Handle loading state
+        if (media.loading) {
+            this.showStatic();
+            this.channelName.textContent = media.channelName || 'Loading...';
+            return;
+        }
+
+        if (!media.fullPath) {
+            this.showStatic();
+            return;
+        }
+
+        console.log('🎬 Attempting to play:', media.fullPath);
+
+        // Explicitly use file:// protocol
+        const fileUrl = `file://${media.fullPath}`;
+        console.log('📁 File URL:', fileUrl);
+
+        this.videoPlayer.src = fileUrl;
+
+        this.videoPlayer.play().then(() => {
+            console.log('✅ Video playing successfully');
+        }).catch(error => {
+            console.error('❌ Failed to play media:', error);
+            console.log('📁 File path:', media.fullPath);
+            console.log('🔗 File URL:', fileUrl);
+
+            // Show file info on screen
+            this.showFileInfo(media);
+        });
+    }
+
+    updateChannelDisplay() {
+    if (this.channels.length === 0) return;
+
+    const channel = this.channels[this.currentChannel];
+    if (channel) {
+        this.channelNumber.textContent = this.currentChannel + 1;
+        this.channelName.textContent = channel.channelName || 'Channel ' + (this.currentChannel + 1);
+    }
+}
+
+playMedia(media) {
+    if (!media) {
+        this.showStatic();
+        return;
+    showFileInfo(media) {
+        const screenContent = document.querySelector('.screen-content');
+        screenContent.innerHTML = `
+            <div style="color: #00ff00; font-family: 'Orbitron', monospace; padding: 20px; text-align: center;">
+                <h2>📺 ${media.channelName}</h2>
+                <div style="margin: 20px 0;">
+                    <div style="font-size: 18px; margin-bottom: 10px;">Now Playing:</div>
+                    <div style="font-size: 24px; font-weight: bold; color: #ffff00;">${media.file}</div>
+                </div>
+                <div style="margin: 20px 0; font-size: 14px;">
+                    <div>File Path:</div>
+                    <div style="word-break: break-all; color: #00ffff;">${media.fullPath}</div>
+                </div>
+                <div style="margin: 20px 0; font-size: 12px; color: #ff6666;">
+                    ⚠️ Browser security prevents direct file playback<br>
+                    Try opening the file path above in VLC or another video player
+                </div>
+            </div>
+        `;
+    }
+
+    playNextMedia() {
+        // Request next media from server
+        this.socket.emit('changeChannel', this.currentChannel);
+    }
+
+    showStatic() {
+        // Create static effect
+        const canvas = document.createElement('canvas');
+        canvas.width = this.videoPlayer.width || 800;
+        canvas.height = this.videoPlayer.height || 450;
+        canvas.style.position = 'absolute';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        canvas.style.borderRadius = '16px';
+
+        const ctx = canvas.getContext('2d');
+        const staticAnimation = () => {
+            const imageData = ctx.createImageData(canvas.width, canvas.height);
+            const data = imageData.data;
+
+            for (let i = 0; i < data.length; i += 4) {
+                const value = Math.random() * 255;
+                data[i] = value;     // Red
+                data[i + 1] = value; // Green
+                data[i + 2] = value; // Blue
+                data[i + 3] = 255;   // Alpha
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+
+            if (this.videoPlayer.style.display === 'none') {
+                requestAnimationFrame(staticAnimation);
+            }
+        };
+
+        this.videoPlayer.parentNode.appendChild(canvas);
+        staticAnimation();
+
+        // Remove canvas when video is shown again
+        this.videoPlayer.addEventListener('play', () => {
+            if (canvas.parentNode) {
+                canvas.parentNode.removeChild(canvas);
+            }
+        }, { once: true });
+    }
+
+    addChannelChangeEffect() {
+        const screen = document.querySelector('.tv-screen');
+        screen.style.transition = 'transform 0.3s';
+        screen.style.transform = 'scale(0.95)';
+
+        setTimeout(() => {
+            screen.style.transform = 'scale(1)';
+        }, 300);
+    }
+
+    powerOnEffect() {
+        const screen = document.querySelector('.tv-screen');
+        screen.style.animation = 'powerOn 0.5s ease-out';
+
+        setTimeout(() => {
+            screen.style.animation = '';
+        }, 500);
+    }
+
+    powerOffEffect() {
+        const screen = document.querySelector('.tv-screen');
+        screen.style.animation = 'powerOff 0.3s ease-in';
+
+        setTimeout(() => {
+            screen.style.animation = '';
+        }, 300);
+    }
+
+    async loadConfiguration() {
+        try {
+            const response = await fetch('/api/config');
+            const config = await response.json();
+
+            // Update config panel with current values
+            document.getElementById('tvSeriesFolder').value = config.mediaFolders?.tvSeries || '';
+            document.getElementById('standupFolder').value = config.mediaFolders?.standup || '';
+            document.getElementById('moviesFolder').value = config.mediaFolders?.movies || '';
+        } catch (error) {
+            console.error('Failed to load configuration:', error);
+        }
+    }
+
+    async testConnection() {
+        const testResults = document.getElementById('testResults');
+        const testButton = document.getElementById('testConnection');
+
+        // Show loading state
+        testButton.textContent = 'Testing...';
+        testButton.disabled = true;
+        testResults.className = 'test-results';
+        testResults.innerHTML = '<div class="folder-result">Testing connections...</div>';
+
+        const config = {
+            mediaFolders: {
+                tvSeries: document.getElementById('tvSeriesFolder').value,
+                standup: document.getElementById('standupFolder').value,
+                movies: document.getElementById('moviesFolder').value
+            }
+        };
+
+        try {
+            const response = await fetch('/api/test-connection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(config)
+            });
+
+            const results = await response.json();
+
+            // Display results
+            let resultsHTML = '';
+            let hasError = false;
+            let hasWarning = false;
+
+            Object.keys(results).forEach(folderType => {
+                const result = results[folderType];
+                const statusClass = result.status === 'success' ? 'folder-found' :
+                                  result.status === 'error' ? 'folder-error' : 'folder-warning';
+
+                resultsHTML += `<div class="folder-result ${statusClass}">
+                    <strong>${folderType.toUpperCase()}:</strong> ${result.message}`;
+
+                if (result.path) {
+                    resultsHTML += `<br><small>${result.path}</small>`;
+                }
+
+                resultsHTML += '</div>';
+
+                if (result.status === 'error') hasError = true;
+                if (result.status === 'warning') hasWarning = true;
+            });
+
+            testResults.innerHTML = resultsHTML;
+
+            // Set overall status class
+            if (hasError) {
+                testResults.className = 'test-results error';
+            } else if (hasWarning) {
+                testResults.className = 'test-results warning';
+            } else {
+                testResults.className = 'test-results success';
+            }
+
+        } catch (error) {
+            console.error('Test connection failed:', error);
+            testResults.className = 'test-results error';
+            testResults.innerHTML = `<div class="folder-result folder-error">
+                <strong>ERROR:</strong> Failed to test connections - ${error.message}
+            </div>`;
+        } finally {
+            // Reset button
+            testButton.textContent = 'Test Connection';
+            testButton.disabled = false;
+        }
+    }
+
+    async saveConfiguration() {
+        const config = {
+            mediaFolders: {
+                tvSeries: document.getElementById('tvSeriesFolder').value,
+                standup: document.getElementById('standupFolder').value,
+                movies: document.getElementById('moviesFolder').value
+            }
+        };
+
+        try {
+            const response = await fetch('/api/config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(config)
+            });
+
+            if (response.ok) {
+                this.hideConfigPanel();
+                this.showNotification('Configuration saved successfully!');
+            } else {
+                throw new Error('Failed to save configuration');
+            }
+        } catch (error) {
+            console.error('Failed to save configuration:', error);
+            this.showNotification('Failed to save configuration', 'error');
+        }
+    }
+
+    showConfigPanel() {
+        document.getElementById('configPanel').style.display = 'block';
+    }
+
+    hideConfigPanel() {
+        document.getElementById('configPanel').style.display = 'none';
+    }
+
+    showNotification(message, type = 'success') {
+        const notification = document.createElement('div');
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: ${type === 'success' ? '#00ff00' : '#ff0000'};
+            color: #000;
+            padding: 15px 30px;
+            border-radius: 5px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            z-index: 10000;
+            animation: slideDown 0.3s ease-out;
+        `;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.animation = 'slideUp 0.3s ease-in';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 3000);
+    }
+}
+
+// Add CSS animations
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes powerOn {
+        0% { transform: scale(0); opacity: 0; }
+        50% { transform: scale(1.1); opacity: 0.5; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes powerOff {
+        0% { transform: scale(1); opacity: 1; }
+        100% { transform: scale(0); opacity: 0; }
+    }
+
+    @keyframes slideDown {
+        from { transform: translate(-50%, -100%); opacity: 0; }
+        to { transform: translate(-50%, 0); opacity: 1; }
+    }
+
+    @keyframes slideUp {
+        from { transform: translate(-50%, 0); opacity: 1; }
+        to { transform: translate(-50%, -100%); opacity: 0; }
+    }
+`;
+document.head.appendChild(style);
+
+// Initialize the TV controller when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    new TVController();
+});

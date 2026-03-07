@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TV - Retro Channel Flipping</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="tv-container">
+        <div class="tv-frame">
+            <div class="tv-screen">
+                <div class="screen-content">
+                    <video id="videoPlayer" class="video-player"></video>
+                    <div class="static-overlay"></div>
+                    <div class="channel-badge" id="channelBadge">
+                        <div class="channel-number" id="channelNumber">1</div>
+                        <div class="channel-name" id="channelName">Loading...</div>
+                    </div>
+                    <div class="now-playing">
+                        <div class="now-playing-label">Now Playing</div>
+                        <div class="now-playing-title" id="currentTitle">Loading...</div>
+                        <div class="now-playing-meta" id="currentMeta">Waiting for channel data</div>
+                    </div>
+                </div>
+            </div>
+            <div class="tv-controls">
+                <div class="control-strip">
+                    <button class="control-btn" id="infoBtn">Info</button>
+                    <button class="control-btn" id="pauseBtn">Pause</button>
+                    <button class="control-btn primary" id="ok">Play</button>
+                    <button class="control-btn" id="channelDown">Chan -</button>
+                    <button class="control-btn" id="channelUp">Chan +</button>
+                    <button class="control-btn" id="volumeKnob">Mute</button>
+                    <button class="control-btn" id="volumeDown">Vol -</button>
+                    <button class="control-btn" id="volumeUp">Vol +</button>
+                    <button class="control-btn danger" id="powerKnob">Power</button>
+                </div>
+                <div class="status-strip">
+                    <div class="tv-status-pills">
+                        <span class="status-pill status-pill-title" id="currentTitlePill">Loading...</span>
+                        <span class="status-pill" id="channelTypePill">Movies</span>
+                        <span class="status-pill" id="channelIndexPill">Channel 1/9</span>
+                    </div>
+                    <div class="volume-indicator">
+                        <span class="status-label">Volume</span>
+                        <div class="volume-bars">
+                            <div class="bar"></div>
+                            <div class="bar"></div>
+                            <div class="bar"></div>
+                            <div class="bar"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="config-panel" id="configPanel">
+        <h3>TV Configuration</h3>
+        <div class="config-section">
+            <label>TV Series Folder:</label>
+            <input type="text" id="tvSeriesFolder" placeholder="/path/to/tv/series">
+        </div>
+        <div class="config-section">
+            <label>Standup Folder:</label>
+            <input type="text" id="standupFolder" placeholder="/path/to/standup">
+        </div>
+        <div class="config-section">
+            <label>Movies Folder:</label>
+            <input type="text" id="moviesFolder" placeholder="/path/to/movies">
+        </div>
+        <div class="config-section">
+            <button id="testConnection">Test Connection</button>
+            <div id="testResults" class="test-results"></div>
+        </div>
+        <div class="config-buttons">
+            <button id="saveConfig">Save Configuration</button>
+            <button id="closeConfig">Close</button>
+        </div>
+    </div>
+
+    <div class="guide-panel" id="guidePanel">
+        <h3>Channel Guide</h3>
+        <div class="guide-content" id="guideContent"></div>
+        <div class="config-buttons">
+            <button id="closeGuide">Close</button>
+        </div>
+    </div>
+
+    <div class="utility-panel">
+        <button class="utility-btn settings-btn" id="settingsBtn">Settings</button>
+        <button class="utility-btn guide-btn" id="guideBtn">TV Guide</button>
+        <div class="channel-list-panel">
+            <div class="channel-buttons"></div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

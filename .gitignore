@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime
+pids/
+*.pid
+*.pid.lock
+*.seed
+
+# Coverage
+coverage/
+.nyc_output/
+*.lcov
+
+# Build and cache artifacts
+dist/
+build/
+.cache/
+.parcel-cache/
+.eslintcache
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Package manager / tooling
+.npm/
+.node_repl_history
+*.tgz
+
+# IDE files
+.vscode/
+.vscode-test/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+
+# Local machine-specific config
+config.local.json
