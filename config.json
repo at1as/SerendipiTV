@@ -6,7 +6,7 @@
   },
   "channelCounts": {
     "movies": 3,
-    "tvSeries": 4,
+    "tvSeries": 6,
     "standup": 3
   },
   "port": 3000,

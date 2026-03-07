@@ -17,6 +17,7 @@ class TVController {
         this.channelTypePill = document.getElementById('channelTypePill');
         this.channelIndexPill = document.getElementById('channelIndexPill');
         this.screenContent = document.querySelector('.screen-content');
+        this.tvFrame = document.querySelector('.tv-frame');
         this.volume = 0.5;
         this.isPowerOn = true;
         this.hasUserInteracted = false;
@@ -117,6 +118,12 @@ class TVController {
                 case 'm':
                     this.muteToggle();
                     break;
+                case 'f':
+                    this.toggleVideoFullscreen();
+                    break;
+                case 'F':
+                    this.toggleShellFullscreen();
+                    break;
                 default:
                     if (/^[1-9]$/.test(e.key)) {
                         const index = Number(e.key) - 1;
@@ -170,6 +177,10 @@ class TVController {
             this.showGuidePanel();
         });
 
+        document.getElementById('keybindingsBtn').addEventListener('click', () => {
+            this.showKeybindingsPanel();
+        });
+
         document.getElementById('saveConfig').addEventListener('click', () => {
             this.saveConfiguration();
         });
@@ -186,9 +197,14 @@ class TVController {
             this.hideGuidePanel();
         });
 
+        document.getElementById('closeKeybindings').addEventListener('click', () => {
+            this.hideKeybindingsPanel();
+        });
+
         document.addEventListener('click', (event) => {
             const configPanel = document.getElementById('configPanel');
             const guidePanel = document.getElementById('guidePanel');
+            const keybindingsPanel = document.getElementById('keybindingsPanel');
 
             if (configPanel.style.display === 'block' && !configPanel.contains(event.target) && !event.target.closest('#settingsBtn')) {
                 this.hideConfigPanel();
@@ -196,6 +212,10 @@ class TVController {
 
             if (guidePanel.style.display === 'block' && !guidePanel.contains(event.target) && !event.target.closest('#guideBtn')) {
                 this.hideGuidePanel();
+            }
+
+            if (keybindingsPanel.style.display === 'block' && !keybindingsPanel.contains(event.target) && !event.target.closest('#keybindingsBtn')) {
+                this.hideKeybindingsPanel();
             }
         });
     }
@@ -211,7 +231,53 @@ class TVController {
         }
 
         const tagName = target.tagName ? target.tagName.toLowerCase() : '';
-        return target.isContentEditable || tagName === 'input' || tagName === 'textarea' || tagName === 'select' || !!target.closest('#configPanel') || !!target.closest('#guidePanel');
+        return target.isContentEditable || tagName === 'input' || tagName === 'textarea' || tagName === 'select' || !!target.closest('#configPanel') || !!target.closest('#guidePanel') || !!target.closest('#keybindingsPanel');
+    }
+
+    showKeybindingsPanel() {
+        document.getElementById('keybindingsPanel').style.display = 'block';
+    }
+
+    hideKeybindingsPanel() {
+        document.getElementById('keybindingsPanel').style.display = 'none';
+    }
+
+    stopPlayback({ keepScreenVisible = true } = {}) {
+        this.videoPlayer.pause();
+        this.videoPlayer.removeAttribute('src');
+        this.videoPlayer.load();
+        this.pendingPlaybackKey = null;
+        this.activePlaybackKey = null;
+        this.stopInfoRefresh();
+
+        if (!keepScreenVisible) {
+            this.videoPlayer.style.display = 'none';
+        }
+    }
+
+    async toggleFullscreen(targetElement) {
+        if (!targetElement) {
+            return;
+        }
+
+        if (document.fullscreenElement === targetElement) {
+            await document.exitFullscreen();
+            return;
+        }
+
+        if (document.fullscreenElement) {
+            await document.exitFullscreen();
+        }
+
+        await targetElement.requestFullscreen();
+    }
+
+    async toggleVideoFullscreen() {
+        await this.toggleFullscreen(this.videoPlayer);
+    }
+
+    async toggleShellFullscreen() {
+        await this.toggleFullscreen(this.tvFrame);
     }
 
     initializeSocketListeners() {
@@ -229,6 +295,7 @@ class TVController {
         });
 
         this.socket.on('disconnect', () => {
+            this.stopPlayback();
             this.showStatic();
         });
     }
@@ -434,14 +501,8 @@ class TVController {
             return;
         }
 
-        this.videoPlayer.pause();
+        this.stopPlayback({ keepScreenVisible: false });
         this.isPaused = false;
-        this.videoPlayer.removeAttribute('src');
-        this.videoPlayer.load();
-        this.videoPlayer.style.display = 'none';
-        this.pendingPlaybackKey = null;
-        this.activePlaybackKey = null;
-        this.stopInfoRefresh();
         this.showStatic();
         this.powerOffEffect();
         this.updatePlayButtonLabel();
@@ -477,6 +538,7 @@ class TVController {
                 this.channelIndexPill.textContent = 'Channel -/-';
             }
             this.setNowPlayingVisible(true);
+            this.scheduleInitialOverlayHide();
             return;
         }
 
@@ -498,9 +560,29 @@ class TVController {
 
         this.channelButtons.querySelectorAll('.channel-btn').forEach((button, index) => {
             button.classList.toggle('active', index === this.currentChannel);
+            if (index === this.currentChannel) {
+                button.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
         });
 
+        if (!this.hasUserInteracted && this.currentMeta.textContent === 'Waiting for your first interaction') {
+            this.scheduleInitialOverlayHide();
+        }
+
         this.updatePlayButtonLabel();
+    }
+
+    scheduleInitialOverlayHide() {
+        if (!this.nowPlaying || this.hasUserInteracted || this.isPaused || !this.isPowerOn) {
+            return;
+        }
+
+        window.clearTimeout(this.nowPlayingTimeout);
+        this.nowPlayingTimeout = window.setTimeout(() => {
+            if (!this.hasUserInteracted && this.currentMeta && this.currentMeta.textContent === 'Waiting for your first interaction') {
+                this.setNowPlayingVisible(false);
+            }
+        }, 10000);
     }
 
     updatePlayButtonLabel() {

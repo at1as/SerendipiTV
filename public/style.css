@@ -663,6 +663,13 @@ body::before {
     scrollbar-color: rgba(0, 255, 102, 0.3) transparent;
 }
 
+.utility-divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.08), rgba(0, 255, 102, 0.45), rgba(255, 255, 255, 0.08));
+    box-shadow: 0 0 12px rgba(0, 255, 102, 0.18);
+}
+
 .channel-list-panel::-webkit-scrollbar {
     width: 6px;
 }
@@ -701,6 +708,12 @@ body::before {
     box-shadow: 0 10px 22px rgba(11, 88, 70, 0.35);
 }
 
+.keybindings-btn {
+    color: #f9ecff;
+    background: linear-gradient(180deg, #6b3fa0, #4a2b70);
+    box-shadow: 0 10px 22px rgba(107, 63, 160, 0.28);
+}
+
 .settings-btn {
     color: #d8e8ff;
     background: linear-gradient(180deg, #4b5672, #323b52);
@@ -718,6 +731,11 @@ body::before {
 .guide-btn:hover {
     transform: scale(1.04);
     box-shadow: 0 0 20px rgba(42, 219, 170, 0.35);
+}
+
+.keybindings-btn:hover {
+    transform: scale(1.04);
+    box-shadow: 0 0 20px rgba(180, 120, 255, 0.35);
 }
 
 @media (max-width: 900px) {
@@ -762,12 +780,17 @@ body::before {
         padding-right: 0;
     }
 
+    .utility-divider {
+        width: 100%;
+    }
+
     .utility-panel .channel-buttons {
         width: 100%;
         grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
     }
 
     .guide-panel,
+    .keybindings-panel,
     .config-panel {
         min-width: min(92vw, 420px);
     }
