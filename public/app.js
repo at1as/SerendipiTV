@@ -352,16 +352,49 @@ class TVController {
     renderChannelButtons() {
         this.channelButtons.innerHTML = '';
 
-        this.channels.forEach((channel, index) => {
-            const button = document.createElement('button');
-            button.className = 'channel-btn';
-            button.dataset.channel = String(index);
-            button.textContent = String(index + 1);
-            button.addEventListener('click', () => {
-                this.markUserInteracted();
-                this.changeChannel(index);
+        const groupedChannels = this.channels.reduce((accumulator, channel, index) => {
+            const label = channel.type === 'movies'
+                ? 'Movies'
+                : channel.type === 'tvSeries'
+                    ? 'TV'
+                    : channel.type === 'standup'
+                        ? 'Standup'
+                        : 'Other';
+
+            if (!accumulator[label]) {
+                accumulator[label] = [];
+            }
+
+            accumulator[label].push({ channel, index });
+            return accumulator;
+        }, {});
+
+        Object.entries(groupedChannels).forEach(([label, entries]) => {
+            const group = document.createElement('div');
+            group.className = 'channel-group';
+
+            const heading = document.createElement('div');
+            heading.className = 'channel-group-title';
+            heading.textContent = label;
+            group.appendChild(heading);
+
+            const groupButtons = document.createElement('div');
+            groupButtons.className = 'channel-group-buttons';
+
+            entries.forEach(({ index }) => {
+                const button = document.createElement('button');
+                button.className = 'channel-btn';
+                button.dataset.channel = String(index);
+                button.textContent = String(index + 1);
+                button.addEventListener('click', () => {
+                    this.markUserInteracted();
+                    this.changeChannel(index);
+                });
+                groupButtons.appendChild(button);
             });
-            this.channelButtons.appendChild(button);
+
+            group.appendChild(groupButtons);
+            this.channelButtons.appendChild(group);
         });
     }
 
@@ -543,6 +576,16 @@ class TVController {
     updateVolume() {
         this.videoPlayer.volume = this.volume;
         this.updateVolumeIndicator();
+        this.updateMuteButtonLabel();
+    }
+
+    updateMuteButtonLabel() {
+        const muteButton = document.getElementById('volumeKnob');
+        if (!muteButton) {
+            return;
+        }
+
+        muteButton.textContent = this.volume > 0 ? '🔇 Mute' : '🔊 Unmute';
     }
 
     updateVolumeIndicator() {

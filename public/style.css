@@ -332,6 +332,27 @@ body::before {
     gap: 10px;
 }
 
+.channel-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.channel-group-title {
+    padding: 0 4px;
+    color: rgba(216, 255, 216, 0.82);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+}
+
+.channel-group-buttons {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
 .channel-btn {
     min-height: 56px;
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -789,6 +810,10 @@ body::before {
 
     .utility-panel .channel-buttons {
         width: 100%;
+        grid-template-columns: 1fr;
+    }
+
+    .channel-group-buttons {
         grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
     }
 
