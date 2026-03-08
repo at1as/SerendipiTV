@@ -162,7 +162,19 @@ body::before {
     border-radius: 14px;
     background: linear-gradient(180deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.72));
     color: #d6ffd6;
-    transition: opacity 0.35s ease;
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    animation: slideUpFade 0.4s ease-out;
+}
+
+@keyframes slideUpFade {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .now-playing-label {
@@ -203,6 +215,12 @@ body::before {
     border-radius: 999px;
     background: rgba(0, 0, 0, 0.22);
     border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: border-color 0.3s ease, background 0.3s ease;
+}
+
+.volume-indicator.muted {
+    border-color: rgba(255, 100, 100, 0.4);
+    background: rgba(80, 0, 0, 0.15);
 }
 
 .status-label {
@@ -210,6 +228,11 @@ body::before {
     letter-spacing: 1px;
     text-transform: uppercase;
     color: #9ae69a;
+    transition: color 0.3s ease;
+}
+
+.volume-indicator.muted .status-label {
+    color: #ff6666;
 }
 
 .volume-bars {
@@ -223,7 +246,13 @@ body::before {
     background: #00ff00;
     box-shadow: 0 0 5px #00ff00;
     opacity: 0.3;
-    transition: opacity 0.3s;
+    transition: opacity 0.3s, background 0.3s, box-shadow 0.3s;
+}
+
+.volume-indicator.muted .bar {
+    background: #ff4444;
+    box-shadow: 0 0 5px #ff4444;
+    opacity: 0.15;
 }
 
 .bar:nth-child(1) { opacity: 0.3; }

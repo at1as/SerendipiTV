@@ -594,11 +594,16 @@ class TVController {
 
     updateVolumeIndicator() {
         const bars = document.querySelectorAll('.volume-bars .bar');
+        const volumeIndicator = document.querySelector('.volume-indicator');
         const activeBars = Math.max(0, Math.ceil(this.volume * bars.length));
 
         bars.forEach((bar, index) => {
             bar.style.opacity = index < activeBars ? `${0.3 + (index * 0.15)}` : '0.1';
         });
+
+        if (volumeIndicator) {
+            volumeIndicator.classList.toggle('muted', this.volume === 0);
+        }
     }
 
     updateChannelDisplay() {
