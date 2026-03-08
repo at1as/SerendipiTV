@@ -31,6 +31,9 @@ Instead of asking you to browse an endless wall of thumbnails, SerendipiTV turns
 
 SerendipiTV supports both standard playback controls and keyboard shortcuts, including two distinct fullscreen modes:
 
+- **Space**
+  - play / pause
+
 - **Video fullscreen**
   - fullscreen only the currently playing video content
 
@@ -123,10 +126,7 @@ Example:
   },
   "port": 3000,
   "slotMinutes": 30,
-  "scheduleHours": 12,
-  "retroMode": true,
-  "autoFlip": false,
-  "flipInterval": 30
+  "scheduleHours": 12
 }
 ```
 
@@ -146,12 +146,6 @@ Example:
 
 - **`scheduleHours`**
   - how far ahead to build the rolling schedule
-
-- **`retroMode`**
-  - retained config flag for the retro presentation mode
-
-- **`autoFlip` / `flipInterval`**
-  - configurable channel auto-flip behavior
 
 ## Controls
 

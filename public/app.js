@@ -131,7 +131,11 @@ class TVController {
                     break;
                 case ' ':
                     e.preventDefault();
-                    this.togglePower();
+                    if (this.isPowerOn) {
+                        this.pauseToggle();
+                    } else {
+                        this.playButtonAction();
+                    }
                     break;
                 case 'm':
                     this.muteToggle();
