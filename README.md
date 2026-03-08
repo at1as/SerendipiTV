@@ -4,6 +4,8 @@ SerendipiTV is a personal media app built around a simple idea: sometimes you do
 
 Instead of asking you to browse an endless wall of thumbnails, SerendipiTV turns your own library into a small set of always-on channels. You flip, land on something already in progress, and either keep watching or move on. It is meant to feel closer to television than a streaming catalog: lighter, faster, and a little more serendipitous.
 
+![SerendipiTV browser view](docs/images/browser-view.png)
+
 ## What it is
 
 - **A retro TV-style interface** for your personal media
@@ -21,8 +23,21 @@ Instead of asking you to browse an endless wall of thumbnails, SerendipiTV turns
 - **On-screen now playing HUD** with title and live playback info for the currently loaded media
 - **Status pills** for current title, content type, and `Channel X/total`
 - **Pause / resume** and **Play / Restart** behavior
+- **Two fullscreen modes**: fullscreen just the video or fullscreen the full TV shell with borders
 - **Autoplay-gate handling** so the first user interaction starts playback correctly
 - **Timestamped server logs** for easier debugging
+
+## Controls and fullscreen
+
+SerendipiTV supports both standard playback controls and keyboard shortcuts, including two distinct fullscreen modes:
+
+- **Video fullscreen**
+  - fullscreen only the currently playing video content
+
+- **TV fullscreen**
+  - fullscreen the full TV shell, including the retro borders and interface framing
+
+![SerendipiTV keybindings](docs/images/key-bindings.png)
 
 ## Important limitations
 
