@@ -240,7 +240,7 @@ body::before {
 
 .control-strip {
     display: grid;
-    grid-template-columns: repeat(9, minmax(0, 1fr));
+    grid-template-columns: repeat(11, minmax(0, 1fr));
     gap: 10px;
 }
 
@@ -250,6 +250,7 @@ body::before {
     align-items: center;
     gap: 12px;
     flex-wrap: wrap;
+    min-width: 0;
 }
 
 .tv-status-pills {
@@ -258,6 +259,7 @@ body::before {
     gap: 10px;
     flex-wrap: wrap;
     min-width: 0;
+    flex: 1 1 auto;
 }
 
 .status-pill {
@@ -277,6 +279,7 @@ body::before {
 
 .status-pill-title {
     max-width: min(34vw, 320px);
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

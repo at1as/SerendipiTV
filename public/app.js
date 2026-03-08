@@ -92,6 +92,16 @@ class TVController {
             this.pauseToggle();
         });
 
+        document.getElementById('seekBackBtn').addEventListener('click', () => {
+            this.markUserInteracted();
+            this.seekBySeconds(-30);
+        });
+
+        document.getElementById('seekForwardBtn').addEventListener('click', () => {
+            this.markUserInteracted();
+            this.seekBySeconds(30);
+        });
+
         document.addEventListener('keydown', (e) => {
             if (this.shouldIgnoreGlobalKeydown(e)) {
                 return;
@@ -106,10 +116,18 @@ class TVController {
                     this.channelDown();
                     break;
                 case 'ArrowLeft':
-                    this.volumeDown();
+                    if (e.shiftKey) {
+                        this.seekBySeconds(-30);
+                    } else {
+                        this.volumeDown();
+                    }
                     break;
                 case 'ArrowRight':
-                    this.volumeUp();
+                    if (e.shiftKey) {
+                        this.seekBySeconds(30);
+                    } else {
+                        this.volumeUp();
+                    }
                     break;
                 case ' ':
                     e.preventDefault();
@@ -410,6 +428,20 @@ class TVController {
         }
 
         this.changeChannel((this.currentChannel - 1 + this.channels.length) % this.channels.length);
+    }
+
+    seekBySeconds(seconds) {
+        if (!this.isPowerOn || !this.videoPlayer || !Number.isFinite(this.videoPlayer.duration) || this.videoPlayer.duration <= 0) {
+            return;
+        }
+
+        const targetTime = Math.min(
+            Math.max(0, (this.videoPlayer.currentTime || 0) + Number(seconds || 0)),
+            this.videoPlayer.duration
+        );
+
+        this.videoPlayer.currentTime = targetTime;
+        this.updateChannelDisplay();
     }
 
     volumeUp() {
